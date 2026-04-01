@@ -1,82 +1,91 @@
+```text
+   ██████╗ ██╗  ██╗ ██████╗ ███████╗████████╗██████╗  ██████╗ ██████╗ ████████╗
+  ██╔════╝ ██║  ██║██╔═══██╗██╔════╝╚══██╔══╝██╔══██╗██╔═══██╗██╔══██╗╚══██╔══╝
+  ██║  ███╗███████║██║   ██║███████╗   ██║   ██████╔╝██║   ██║██████╔╝   ██║   
+  ██║   ██║██╔══██║██║   ██║╚════██║   ██║   ██╔═══╝ ██║   ██║██╔══██╗   ██║   
+  ╚██████╔╝██║  ██║╚██████╔╝███████║   ██║   ██║     ╚██████╔╝██║  ██║   ██║   
+   ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝   ╚═╝   ╚═╝      ╚═════╝ ╚═╝  ╚═╝   ╚═╝   
+```
+
 # GhostPort
 
-A modular, multi-threaded network reconnaissance CLI tool written in Rust.
+Sebuah perangkat CLI pengintaian jaringan (network reconnaissance) modular dan multi-threaded yang ditulis menggunakan Rust.
 
-## Features
+## Fitur
 
-* **Core Scanning**
-  * Multi-threaded execution for concurrent port enumeration
-  * Service fingerprinting and version detection
-* **Stealth & Evasion**
-  * Configurable scanning profiles and timing modes
-  * Port randomization and packet jitter to reduce detection signatures
-* **Analysis & Intelligence**
-  * Rule-based vulnerability intelligence matching
-  * Structured internal reporting system for deterministic output
-* **Reconnaissance Plugins**
-  * Extensible module system targeting specific services (HTTP, SSH, FTP)
-  * HTTP deep reconnaissance (header extraction, title parsing, endpoint probing)
-* **Export Engine**
-  * Native data serialization to JSON, CSV, and TXT formats
+* **Pemindaian Inti (Core Scanning)**
+  * Eksekusi multi-threaded untuk enumerasi port secara konkuren
+  * *Service fingerprinting* dan deteksi versi
+* **Siluman & Penghindaran (Stealth & Evasion)**
+  * Profil pemindaian dan mode timing yang dapat dikonfigurasi
+  * Pengacakan port dan *packet jitter* untuk meminimalisasi deteksi jaringan
+* **Analisis & Intelijen (Analysis & Intelligence)**
+  * Klasifikasi intelijen kerentanan berbasis aturan (rule-based)
+  * Sistem pelaporan internal terstruktur untuk output deterministik
+* **Plugin Pengintaian (Reconnaissance Plugins)**
+  * Ekosistem modul yang mudah diperluas untuk layanan spesifik (HTTP, SSH, FTP)
+  * Pengintaian mendalam HTTP (ekstraksi header, parsing judul halaman, pengujian endpoint)
+* **Mesin Ekspor (Export Engine)**
+  * Serialisasi format data bawaan untuk output JSON, CSV, dan TXT
 
-## Architecture
+## Arsitektur
 
-GhostPort operates on a staged, pipeline-driven architecture:
+GhostPort beroperasi berdasarkan arsitektur berjenjang yang digerakkan oleh pipeline:
 
-1. **Discovery & Scanning**: Validates host availability, followed by a concurrent, randomized TCP port scan.
-2. **Fingerprinting**: Interrogates open ports to extract service banners and identify software versions.
-3. **Intelligence Layer**: Assesses identified versions against a local vulnerability rule-base.
-4. **Plugin Execution**: Routes enumerated services to protocol-specific plugins for deeper inspection.
-5. **Aggregation**: Centralizes findings into a unified `ScanReport` model before dispatching to the CLI renderer or export engine.
+1. **Discovery & Scanning**: Memvalidasi ketersediaan host, dilanjutkan dengan pemindaian port TCP secara acak dan konkuren.
+2. **Fingerprinting**: Berinteraksi dengan port terbuka untuk mengekstraksi banner layanan dan mengidentifikasi versi perangkat lunak.
+3. **Intelligence Layer**: Menganalisis versi perangkat lunak yang diidentifikasi terhadap basis aturan kerentanan lokal.
+4. **Plugin Execution**: Merutekan layanan yang telah diidentifikasi ke plugin spesifik-protokol untuk inspeksi mendalam.
+5. **Aggregation**: Mengkonsolidasi seluruh temuan ke dalam satu model laporan `ScanReport` utuh sebelum diteruskan ke CLI *renderer* atau mesin ekspor.
 
-## Installation
+## Instalasi
 
-**Prerequisites**
-* Rust toolchain (1.70.0 or higher recommended)
+**Prasyarat**
+* Toolchain Rust (direkomendasikan versi 1.70.0 ke atas)
 
-**Build from source**
+**Kompilasi dari source**
 ```bash
 git clone https://github.com/username/ghostport.git
 cd ghostport
 cargo build --release
 ```
-The compiled binary will be available at `target/release/ghostport`.
+Binary hasil kompilasi akan dapat diakses melalui path direktori `target/release/ghostport`.
 
-## Usage
+## Penggunaan
 
-**Basic Scan**
-Scans the top 20 common ports on a target IP address:
+**Pemindaian Dasar**
+Memindai 20 port yang paling umum digunakan pada IP target:
 ```bash
 ghostport scan 192.168.1.10 --top-ports
 ```
 
-**Advanced Scan**
-Scans a specific port range utilizing stealth timing, executing deep reconnaissance plugins, and exporting the results to a JSON file:
+**Pemindaian Lanjutan**
+Memindai rentang port tertentu menggunakan parameter timing *stealth*, mengeksekusi plugin pengintaian, dan mengekspor hasilnya langsung ke format file JSON:
 ```bash
 ghostport scan 192.168.1.10 -s 1 -e 1024 --mode stealth --plugins --format json --output result.json
 ```
 
-## CLI Reference
+## Referensi CLI
 
-### Commands
-* `scan` - Executes a network scan against the specified target.
-* `connect` - Initiates a basic TCP connection test to a specific port.
+### Perintah Utama
+* `scan` - Mengeksekusi pemindaian jaringan ke target yang ditentukan.
+* `connect` - Memulai pengetesan koneksi TCP sederhana (serupa netcat) ke port tertentu.
 
-### Important Flags (Scan Command)
-* `-s, --start-port <PORT>`: Starting port range.
-* `-e, --end-port <PORT>`: Ending port range.
-* `--top-ports`: Target the 20 most common ports.
-* `-t, --threads <COUNT>`: Override default thread count.
-* `-m, --mode <MODE>`: Set timing and stealth templates (e.g., `aggressive`, `normal`, `stealth`).
-* `--banner`: Enable banner grabbing.
-* `--plugins`: Enable protocol-specific deep reconnaissance plugins.
-* `--json`: Output raw JSON to standard output.
-* `-o, --output <FILE>`: File path for scan report export.
-* `-f, --format <FORMAT>`: Export format (`txt`, `csv`, `json`).
+### Flag Penting (Perintah Scan)
+* `-s, --start-port <PORT>`: Rentang port awal pemindaian.
+* `-e, --end-port <PORT>`: Rentang port akhir pemindaian.
+* `--top-ports`: Target spesifik ke 20 port yang paling umum saja.
+* `-t, --threads <COUNT>`: Melakukan *override* terhadap jumlah thread bawaan (default).
+* `-m, --mode <MODE>`: Mengatur template mode *timing* dan *stealth* (contoh: `aggressive`, `balanced`, `stealth`).
+* `--banner`: Mengaktifkan ekstraksi *banner grabbing*.
+* `--plugins`: Mengaktifkan eksekusi plugin *deep reconnaissance* berdasarkan tipe protokol.
+* `--json`: Mencetak hasil dalam bentuk raw JSON via standard output (stdout).
+* `-o, --output <FILE>`: Menentukan *file path* destinasi khusus ketika mengekspor laporan pemindaian.
+* `-f, --format <FORMAT>`: Format tipe ekspor yang dihendaki (`txt`, `csv`, atau `json`).
 
-## Output
+## Hasil Output
 
-Example JSON output structure:
+Contoh struktur output JSON:
 ```json
 {
   "target": "192.168.1.10",
@@ -100,14 +109,14 @@ Example JSON output structure:
 }
 ```
 
-## Extensibility
+## Ekstensibilitas
 
-GhostPort is designed to be easily extended via the `Plugin` trait. Developers can implement custom reconnaissance logic by defining a new struct, implementing the `should_run()` and `run()` trait methods, and registering the module in the `PluginManager`. The pipeline automatically passes the `ScanResult` context to applicable plugins and aggregates their findings.
+GhostPort dirancang secara khusus untuk bisa diekstensi secara langsung melalui *trait* `Plugin`. Anda dapat mengimplementasikan logika kustom pengintaian mandiri dengan mendefinisikan *struct* baru, memberikan nilai pada metode *trait* `should_run()` dan `run()`, dan meregistrasi modul tersebut ke dalam `PluginManager`. Pipeline pemindaian GhostPort akan secara otomatis memberikan parameter dan konteks `ScanResult` ke plugin kustom yang telah dibuat tersebut dan mengelompokkan temuan-temuannya.
 
-## Disclaimer
+## Peringatan (Disclaimer)
 
-This tool is provided for authorized security auditing and educational purposes only. Usage of GhostPort for network scanning without prior mutual consent is illegal. The developers assume no liability and are not responsible for any misuse or damage caused by this program. 
+Toolkit ini murni disediakan terbatas pada kepentingan audit keamanan yang telah disetujui, diotorisasi secara hukum, dan untuk materi edukasi saja. Menggunakan GhostPort dalam pemindaian ke target tanpa adanya izin konsensual hukum dengan penyedia layanan atau target jaringan terkait yang berlaku adalah perbuatan ilegal. Para perancang maupun kontributor entitas peranti lunak ini tidak mengambil tanggung jawab perihal setiap kejahatan yang disengaja atas penyalahgunaan atau kerusakan dari produk sistem ini secara langsung.
 
-## License
+## Lisensi
 
-This project is licensed under the MIT License.
+Proyek aplikasi software GhostPort dilisensikan mendasar sepenuhnya pada Lisensi MIT.
