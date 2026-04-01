@@ -141,7 +141,8 @@ Contoh struktur output JSON hasil generasi Vulnerability Intelligence & Verifica
 
 ## Ekstensibilitas
 
-GhostPort dirancang secara khusus untuk bisa diekstensi secara langsung melalui *trait* Plugin. Anda dapat mengimplementasikan logika kustom pengintaian mandiri dengan mendefinisikan *struct* baru, memberikan nilai pada metode *trait* should_run() dan un(), dan meregistrasi modul tersebut ke dalam PluginManager. Pipeline pemindaian GhostPort akan secara otomatis memberikan parameter dan konteks ScanResult ke plugin kustom yang telah dibuat tersebut dan mengelompokkan temuan-temuannya.
+GhostPort dirancang secara khusus untuk bisa diekstensi secara langsung melalui *trait* Plugin. Anda dapat mengimplementasikan logika kustom pengintaian mandiri dengan mendefinisikan *struct* baru, memberikan nilai pada metode *trait* should_run() dan 
+un(), dan meregistrasi modul tersebut ke dalam PluginManager. Pipeline pemindaian GhostPort akan secara otomatis memberikan parameter dan konteks ScanResult ke plugin kustom yang telah dibuat tersebut dan mengelompokkan temuan-temuannya.
 
 ## Peringatan (Disclaimer)
 
