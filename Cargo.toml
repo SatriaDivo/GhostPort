@@ -1,0 +1,21 @@
+[package]
+name = "ghostport"
+version = "3.0.0"
+edition = "2021"
+authors = ["SatriaDivo"]
+description = "Silent Network Recon Toolkit - Modular Stealth Reconnaissance Framework"
+build = "build.rs"
+
+[dependencies]
+clap = { version = "4.4", features = ["derive"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+rand = "0.8"
+
+[profile.release]
+opt-level = 3
+lto = true
+
+[[bin]]
+name = "ghostport"
+path = "src/main.rs"
