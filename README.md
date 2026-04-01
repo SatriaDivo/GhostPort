@@ -7,14 +7,13 @@
   ██║   ██║██╔══██║██║   ██║╚════██║   ██║   ██╔═══╝ ██║   ██║██╔══██╗   ██║   
   ╚██████╔╝██║  ██║╚██████╔╝███████║   ██║   ██║     ╚██████╔╝██║  ██║   ██║   
    ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝   ╚═╝   ╚═╝      ╚═════╝ ╚═╝  ╚═╝   ╚═╝   
-                     v3.0 - 🕵️ Modular Stealth Reconnaissance
 ```
 
 **Silent Network Recon Toolkit** - Modular Stealth Reconnaissance Framework dengan plugin system, stealth scanning, dan security intelligence. Built with Rust.
 
 ## ✨ Features
 
-### 🆕 New in v3.0
+### 🆕 Key Features
 
 - 🕵️ **Stealth Engine** - Random port order, jitter delay, scan modes (stealth/balanced/aggressive)
 - 🧩 **Plugin System** - Extensible architecture dengan trait-based plugins
@@ -28,13 +27,13 @@
 - 📡 **Host Discovery** - TCP-based ping
 - 🌐 **DNS Resolution** - Support hostname dan URL
 
-## 🏗️ Architecture v3.0
+## 🏗️ Architecture
 
-GhostPort v3.0 menggunakan **5-stage pipeline architecture**:
+GhostPort menggunakan **5-stage pipeline architecture**:
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────┐
-│                          GHOSTPORT v3.0 PIPELINE                                     │
+│                             GHOSTPORT PIPELINE                                       │
 ├──────────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                      │
 │  ┌────────────────┐   ┌────────────────┐   ┌────────────────┐   ┌────────────────┐  │
@@ -62,7 +61,7 @@ GhostPort v3.0 menggunakan **5-stage pipeline architecture**:
 
 ## 🕵️ Stealth Engine
 
-GhostPort v3.0 memiliki **Stealth Engine** untuk menghindari deteksi IDS/IPS:
+GhostPort memiliki **Stealth Engine** untuk menghindari deteksi IDS/IPS:
 
 ### Fitur Stealth:
 1. **Random Port Order** - Port di-shuffle sebelum scanning (Fisher-Yates algorithm)
@@ -227,7 +226,7 @@ SCAN OPTIONS:
 
 ```
 ╔══════════════════════════════════════════════════════════════╗
-║  GhostPort v3.0.0                                            ║
+║  GhostPort                                                   ║
 ║  Silent Network Recon Toolkit                                ║
 ║  🕵️ Modular Stealth Reconnaissance Framework                 ║
 ╚══════════════════════════════════════════════════════════════╝
