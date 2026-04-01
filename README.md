@@ -7,7 +7,6 @@
   ██║   ██║██╔══██║██║   ██║╚════██║   ██║   ██╔═══╝ ██║   ██║██╔══██╗   ██║   
   ╚██████╔╝██║  ██║╚██████╔╝███████║   ██║   ██║     ╚██████╔╝██║  ██║   ██║   
    ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝   ╚═╝   ╚═╝      ╚═════╝ ╚═╝  ╚═╝   ╚═╝   
-                     v3.0 - 🕵️ Modular Stealth Reconnaissance
 ```
 
 **Silent Network Recon Toolkit** - Modular Stealth Reconnaissance Framework dengan plugin system, stealth scanning, dan security intelligence. Built with Rust.
