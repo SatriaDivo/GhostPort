@@ -93,7 +93,7 @@ impl std::fmt::Display for ScanMode {
     about = "Silent Network Recon Toolkit - Modular Stealth Scanner",
     long_about = None,
     before_help = BANNER,
-    after_help = "Examples:\n  ghostport scan -i 192.168.1.1 -e 1000\n  ghostport scan -i 192.168.1.1 --mode stealth -b\n  ghostport connect -i 192.168.1.1 -p 22"
+    after_help = "Examples:\n  ghostport scan 192.168.1.1 -e 1000\n  ghostport scan 192.168.1.1 --mode stealth -b\n  ghostport connect 192.168.1.1 -p 22"
 )]
 pub struct Cli {
     #[command(subcommand)]
@@ -122,7 +122,7 @@ pub enum Commands {
     #[command(visible_alias = "s")]
     Scan {
         /// Target: IP address atau hostname
-        #[arg(short = 'i', long = "ip", value_name = "TARGET")]
+        #[arg(value_name = "TARGET")]
         target: String,
 
         /// Port awal
@@ -170,7 +170,7 @@ pub enum Commands {
     #[command(visible_alias = "c")]
     Connect {
         /// Target: IP atau hostname
-        #[arg(short = 'i', long = "ip", value_name = "TARGET")]
+        #[arg(value_name = "TARGET")]
         target: String,
 
         /// Port tujuan
@@ -182,7 +182,7 @@ pub enum Commands {
     #[command(visible_alias = "d")]
     Discover {
         /// Target: IP address
-        #[arg(short = 'i', long = "ip", value_name = "TARGET")]
+        #[arg(value_name = "TARGET")]
         target: String,
 
         /// Mode scanning
