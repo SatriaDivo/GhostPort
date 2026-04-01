@@ -1,7 +1,6 @@
 //! SSH Plugin
 
-use crate::config::{PluginResult, PluginFinding};
-use crate::plugins::Plugin;
+use crate::plugins::plugin_trait::{Plugin, PluginResult, PluginFinding};
 
 const SSH_PORTS: [u16; 2] = [22, 2222];
 

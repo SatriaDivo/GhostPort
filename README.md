@@ -1,321 +1,113 @@
-# GhostPort v3.0
+# GhostPort
 
-```
-   ██████╗ ██╗  ██╗ ██████╗ ███████╗████████╗██████╗  ██████╗ ██████╗ ████████╗
-  ██╔════╝ ██║  ██║██╔═══██╗██╔════╝╚══██╔══╝██╔══██╗██╔═══██╗██╔══██╗╚══██╔══╝
-  ██║  ███╗███████║██║   ██║███████╗   ██║   ██████╔╝██║   ██║██████╔╝   ██║   
-  ██║   ██║██╔══██║██║   ██║╚════██║   ██║   ██╔═══╝ ██║   ██║██╔══██╗   ██║   
-  ╚██████╔╝██║  ██║╚██████╔╝███████║   ██║   ██║     ╚██████╔╝██║  ██║   ██║   
-   ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝   ╚═╝   ╚═╝      ╚═════╝ ╚═╝  ╚═╝   ╚═╝   
-```
+A modular, multi-threaded network reconnaissance CLI tool written in Rust.
 
-**Silent Network Recon Toolkit** - Modular Stealth Reconnaissance Framework dengan plugin system, stealth scanning, dan security intelligence. Built with Rust.
+## Features
 
-## ✨ Features
+* **Core Scanning**
+  * Multi-threaded execution for concurrent port enumeration
+  * Service fingerprinting and version detection
+* **Stealth & Evasion**
+  * Configurable scanning profiles and timing modes
+  * Port randomization and packet jitter to reduce detection signatures
+* **Analysis & Intelligence**
+  * Rule-based vulnerability intelligence matching
+  * Structured internal reporting system for deterministic output
+* **Reconnaissance Plugins**
+  * Extensible module system targeting specific services (HTTP, SSH, FTP)
+  * HTTP deep reconnaissance (header extraction, title parsing, endpoint probing)
+* **Export Engine**
+  * Native data serialization to JSON, CSV, and TXT formats
 
-### 🆕 Key Features
+## Architecture
 
-- 🕵️ **Stealth Engine** - Random port order, jitter delay, scan modes (stealth/balanced/aggressive)
-- 🧩 **Plugin System** - Extensible architecture dengan trait-based plugins
-- 📊 **Intelligence Layer** - Service classification dan risk analysis
-- 🔌 **Built-in Plugins** - HTTP Recon, SSH Analyzer, FTP Analyzer
+GhostPort operates on a staged, pipeline-driven architecture:
 
-### Core Features
-- 🚀 **Concurrent Port Scanner** - Multi-threaded dengan worker pool
-- 🔍 **Smart Fingerprinting** - Banner grabbing dengan version detection
-- 🧪 **Connect Mode** - Netcat-like interactive connection
-- 📡 **Host Discovery** - TCP-based ping
-- 🌐 **DNS Resolution** - Support hostname dan URL
+1. **Discovery & Scanning**: Validates host availability, followed by a concurrent, randomized TCP port scan.
+2. **Fingerprinting**: Interrogates open ports to extract service banners and identify software versions.
+3. **Intelligence Layer**: Assesses identified versions against a local vulnerability rule-base.
+4. **Plugin Execution**: Routes enumerated services to protocol-specific plugins for deeper inspection.
+5. **Aggregation**: Centralizes findings into a unified `ScanReport` model before dispatching to the CLI renderer or export engine.
 
-## 🏗️ Architecture
+## Installation
 
-GhostPort menggunakan **5-stage pipeline architecture**:
+**Prerequisites**
+* Rust toolchain (1.70.0 or higher recommended)
 
-```
-┌──────────────────────────────────────────────────────────────────────────────────────┐
-│                             GHOSTPORT PIPELINE                                       │
-├──────────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                      │
-│  ┌────────────────┐   ┌────────────────┐   ┌────────────────┐   ┌────────────────┐  │
-│  │   STAGE 1      │   │   STAGE 2      │   │   STAGE 3      │   │   STAGE 4      │  │
-│  │ Host Discovery │──▶│  Port Scanner  │──▶│ Fingerprinting │──▶│ Intelligence   │  │
-│  │                │   │  + Stealth 🕵️ │   │                │   │    Layer 📊    │  │
-│  │ - TCP ping     │   │ - Random order │   │ - Banner grab  │   │ - Categorize   │  │
-│  │ - Alive check  │   │ - Jitter delay │   │ - Version parse│   │ - Warnings     │  │
-│  └───────┬────────┘   └───────┬────────┘   └───────┬────────┘   └───────┬────────┘  │
-│          │                    │                    │                    │           │
-│          ▼                    ▼                    ▼                    ▼           │
-│     mpsc::channel        StealthEngine        mpsc::channel        ServiceCategory  │
-│     ActiveHost           random+jitter        ScanResult           risk warnings    │
-│                                                                                      │
-│                    ┌────────────────────────────────────────────┐                   │
-│                    │              STAGE 5                       │                   │
-│                    │         Plugin Execution 🧩                │                   │
-│                    │  - HTTP Plugin (title, server, status)     │                   │
-│                    │  - SSH Plugin (version, protocol)          │                   │
-│                    │  - FTP Plugin (banner, server type)        │                   │
-│                    └────────────────────────────────────────────┘                   │
-│                                                                                      │
-└──────────────────────────────────────────────────────────────────────────────────────┘
-```
-
-## 🕵️ Stealth Engine
-
-GhostPort memiliki **Stealth Engine** untuk menghindari deteksi IDS/IPS:
-
-### Fitur Stealth:
-1. **Random Port Order** - Port di-shuffle sebelum scanning (Fisher-Yates algorithm)
-2. **Jitter Delay** - Random delay antar koneksi
-3. **Variable Timeout** - Timeout bervariasi untuk menghindari fingerprinting
-
-### Scan Modes:
-
-| Mode | Threads | Delay | Timeout | Use Case |
-|------|---------|-------|---------|----------|
-| `stealth` | 2 | 1-3s (random) | 5s | Maximum stealth, IDS evasion |
-| `balanced` | 30 | 50-200ms (random) | 1.5s | Default, balanced |
-| `aggressive` | 150 | 0-20ms (random) | 500ms | Fast scanning |
-
+**Build from source**
 ```bash
-# Stealth mode untuk menghindari deteksi
-ghostport scan -i 192.168.1.1 -e 1024 --mode stealth
-
-# Aggressive untuk scan cepat
-ghostport scan -i 192.168.1.1 -e 1024 --mode aggressive
-```
-
-## 🧩 Plugin System
-
-GhostPort menggunakan **trait-based plugin system** yang extensible:
-
-```rust
-/// Plugin trait - interface untuk semua plugin
-pub trait Plugin: Send + Sync {
-    /// Nama plugin
-    fn name(&self) -> &str;
-    
-    /// Apakah plugin ini relevan untuk port tertentu?
-    fn should_run(&self, port: u16) -> bool;
-    
-    /// Jalankan plugin
-    fn run(&self, target: &str, port: u16, banner: Option<&str>) -> Option<PluginResult>;
-}
-```
-
-### Built-in Plugins:
-
-1. **HTTP Plugin** (port 80, 443, 8080, dll)
-   - Extract status code
-   - Extract Server header
-   - Extract HTML title
-   - Detect outdated servers
-
-2. **SSH Plugin** (port 22, 2222)
-   - Parse SSH protocol version
-   - Extract software version
-   - Detect outdated OpenSSH
-
-3. **FTP Plugin** (port 21, 2121)
-   - Parse FTP banner
-   - Detect server type (vsftpd, ProFTPD)
-   - Warning cleartext credentials
-
-### List Plugins:
-```bash
-ghostport plugins
-```
-
-### Enable Plugins saat Scan:
-```bash
-ghostport scan -i 192.168.1.1 -e 1024 -b --plugins
-```
-
-## 📦 Installation
-
-### Prerequisites
-- Rust 1.70+ (install dari https://rustup.rs)
-
-### Build dari source:
-
-```bash
-cd GhostPort
-
-# Build release version
+git clone https://github.com/username/ghostport.git
+cd ghostport
 cargo build --release
-
-# Binary: target/release/ghostport.exe (Windows)
-# Binary: target/release/ghostport (Linux/macOS)
 ```
+The compiled binary will be available at `target/release/ghostport`.
 
-## 🚀 Usage
+## Usage
 
-### Port Scanning
-
+**Basic Scan**
+Scans the top 20 common ports on a target IP address:
 ```bash
-# Basic scan (ports 1-1024)
-ghostport scan -i 192.168.1.1 -e 1024
-
-# Scan dengan hostname
-ghostport scan -i google.com -e 1000
-
-# Scan dengan banner grabbing
-ghostport scan -i 192.168.1.1 -e 1024 -b
-
-# Stealth mode
-ghostport scan -i 192.168.1.1 -e 1024 --mode stealth
-
-# Dengan plugins
-ghostport scan -i 192.168.1.1 -e 1024 -b --plugins
-
-# Top ports saja
-ghostport scan -i 192.168.1.1 --top-ports
-
-# JSON output
-ghostport scan -i 192.168.1.1 -e 1024 --json
+ghostport scan 192.168.1.10 --top-ports
 ```
 
-### Connect Mode (Netcat-like)
-
+**Advanced Scan**
+Scans a specific port range utilizing stealth timing, executing deep reconnaissance plugins, and exporting the results to a JSON file:
 ```bash
-ghostport connect -i 192.168.1.1 -p 80
-# Lalu ketik:
-# GET / HTTP/1.1
-# Host: localhost
-# [Enter dua kali]
+ghostport scan 192.168.1.10 -s 1 -e 1024 --mode stealth --plugins --format json --output result.json
 ```
 
-### Host Discovery
+## CLI Reference
 
-```bash
-ghostport discover -i 192.168.1.1
-ghostport discover -i 192.168.1.1 --mode aggressive
-```
+### Commands
+* `scan` - Executes a network scan against the specified target.
+* `connect` - Initiates a basic TCP connection test to a specific port.
 
-### List Plugins
+### Important Flags (Scan Command)
+* `-s, --start-port <PORT>`: Starting port range.
+* `-e, --end-port <PORT>`: Ending port range.
+* `--top-ports`: Target the 20 most common ports.
+* `-t, --threads <COUNT>`: Override default thread count.
+* `-m, --mode <MODE>`: Set timing and stealth templates (e.g., `aggressive`, `normal`, `stealth`).
+* `--banner`: Enable banner grabbing.
+* `--plugins`: Enable protocol-specific deep reconnaissance plugins.
+* `--json`: Output raw JSON to standard output.
+* `-o, --output <FILE>`: File path for scan report export.
+* `-f, --format <FORMAT>`: Export format (`txt`, `csv`, `json`).
 
-```bash
-ghostport plugins
-```
+## Output
 
-## 📋 CLI Reference
-
-```
-USAGE:
-    ghostport <COMMAND>
-
-COMMANDS:
-    scan      🔍 Scan target dengan pipeline stealth
-    connect   🔗 Connect ke target (Netcat-like)
-    discover  📡 Discover host aktif
-    plugins   🧩 List plugin yang tersedia
-    help      Help message
-
-SCAN OPTIONS:
-    -i, --ip <TARGET>       Target (IP/hostname/URL)
-    -s, --start <PORT>      Start port [default: 1]
-    -e, --end <PORT>        End port [default: 1024]
-    -t, --threads <NUM>     Override thread count
-    -b, --banner            Enable banner grabbing
-        --mode <MODE>       Scan mode [stealth|balanced|aggressive]
-        --top-ports         Scan top 20 ports only
-        --plugins           Enable plugin execution
-        --json              JSON output
-```
-
-## 📊 Sample Output
-
-```
-╔══════════════════════════════════════════════════════════════╗
-║  GhostPort                                                   ║
-║  Silent Network Recon Toolkit                                ║
-║  🕵️ Modular Stealth Reconnaissance Framework                 ║
-╚══════════════════════════════════════════════════════════════╝
-
-[*] Target: example.com (93.184.216.34)
-[*] Port Range: 1-1024
-[*] Mode: ⚖️ Balanced speed and stealth
-[*] Banner Grabbing: ON
-[*] Plugins: ON
-
-[*] Stage 1: Host Discovery...
-[+] Host is UP (port 80, 125ms)
-
-[*] Stage 2: Port Scanning (Stealth Mode: Balanced)...
-[OPEN] 93.184.216.34:22 → SSH (OpenSSH_8.2) 🔐 Remote Access
-       └─ SSH-2.0-OpenSSH_8.2
-       [SSH Analyzer] Protocol: SSH-2
-       [SSH Analyzer] Software: OpenSSH_8.2
-
-[OPEN] 93.184.216.34:80 → nginx (1.21.0) 🌐 Web
-       └─ HTTP/1.1 200 OK
-       [HTTP Recon] Status: 200 OK
-       [HTTP Recon] Server: nginx/1.21.0
-       [HTTP Recon] Title: Example Domain
-
-[OPEN] 93.184.216.34:443 → HTTPS 🌐 Web
-
-════════════════════════════════════════════════════════════════
-[+] Scan Complete!
-[+] Duration: 12.45s
-[+] Ports: 1024 scanned, 3 open
-
-[+] Summary:
-PORT     SERVICE         VERSION              CATEGORY
-────────────────────────────────────────────────────────────────
-22       SSH             OpenSSH_8.2          🔐 Remote Access
-80       nginx           1.21.0               🌐 Web
-443      HTTPS           -                    🌐 Web
-```
-
-## 🔧 Extending dengan Custom Plugin
-
-Untuk membuat plugin kustom:
-
-```rust
-use ghostport::{Plugin, PluginResult, PluginFinding, FindingSeverity};
-
-pub struct MyCustomPlugin;
-
-impl Plugin for MyCustomPlugin {
-    fn name(&self) -> &str {
-        "My Custom Plugin"
+Example JSON output structure:
+```json
+{
+  "target": "192.168.1.10",
+  "results": [
+    {
+      "ip": "192.168.1.10",
+      "port": 80,
+      "service": "http",
+      "version": "Apache/2.4.41",
+      "banner": "HTTP/1.1 200 OK\r\nServer: Apache/2.4.41",
+      "category": "Web",
+      "warnings": [
+        "Apache version < 2.4.49 is vulnerable to path traversal (CVE-2021-41773)"
+      ],
+      "plugin_findings": [
+        "[HttpPlugin] endpoints: Found /admin (200 OK)",
+        "[HttpPlugin] title: Internal Dashboard"
+      ]
     }
-    
-    fn should_run(&self, port: u16) -> bool {
-        port == 12345 // Custom port
-    }
-    
-    fn run(&self, target: &str, port: u16, banner: Option<&str>) -> Option<PluginResult> {
-        // Your logic here
-        Some(PluginResult {
-            plugin_name: self.name().to_string(),
-            findings: vec![
-                PluginFinding {
-                    key: "Custom".to_string(),
-                    value: "Finding".to_string(),
-                    severity: FindingSeverity::Info,
-                }
-            ],
-        })
-    }
+  ]
 }
-
-// Register ke PluginManager:
-// plugin_manager.register(Box::new(MyCustomPlugin));
 ```
 
-## 🛡️ Error Handling
+## Extensibility
 
-- ✅ Invalid IP/hostname rejected dengan clear message
-- ✅ Semua network operations memiliki timeout
-- ✅ Plugin crash tidak menghentikan program (catch_unwind)
-- ✅ Connection errors handled gracefully
-- ✅ Tidak panic dalam kondisi normal
+GhostPort is designed to be easily extended via the `Plugin` trait. Developers can implement custom reconnaissance logic by defining a new struct, implementing the `should_run()` and `run()` trait methods, and registering the module in the `PluginManager`. The pipeline automatically passes the `ScanResult` context to applicable plugins and aggregates their findings.
 
-## ⚠️ Disclaimer
+## Disclaimer
 
-Tool ini ditujukan untuk **authorized security testing only**. Selalu dapatkan izin sebelum melakukan scanning. Unauthorized network scanning mungkin ilegal di jurisdiksi Anda.
+This tool is provided for authorized security auditing and educational purposes only. Usage of GhostPort for network scanning without prior mutual consent is illegal. The developers assume no liability and are not responsible for any misuse or damage caused by this program. 
 
-## 📄 License
+## License
 
-MIT License - Lihat file LICENSE untuk detail.
+This project is licensed under the MIT License.

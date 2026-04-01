@@ -9,7 +9,9 @@ use std::io::{Read, Write};
 use rand::seq::SliceRandom;
 use rand::Rng;
 
-use crate::config::{ScanConfig, ScanResult, PluginResult, BANNER_MAX_SIZE};
+use crate::utils::report::ScanResult;
+use crate::plugins::plugin_trait::PluginResult;
+use crate::config::{ScanConfig, BANNER_MAX_SIZE};
 use crate::fingerprint::service;
 use crate::intelligence::analyzer;
 use crate::plugins::manager::PluginManager;
@@ -109,8 +111,15 @@ pub fn scan_ports(
         let category = analyzer::categorize_port(pr.port);
         let warnings = analyzer::analyze_service(pr.port, &svc, banner.as_deref());
         
-        let plugin_results: Vec<PluginResult> = if let Some(pm) = plugin_manager {
-            pm.execute(target, pr.port, banner.as_deref())
+        let plugin_findings: Vec<String> = if let Some(pm) = plugin_manager {
+            let res = pm.execute(target, pr.port, banner.as_deref());
+            let mut findings = Vec::new();
+            for r in res {
+                for f in r.findings {
+                    findings.push(format!("[{}] {}: {} ({})", r.plugin_name, f.key, f.value, f.severity));
+                }
+            }
+            findings
         } else {
             vec![]
         };
@@ -123,7 +132,7 @@ pub fn scan_ports(
             banner,
             category: Some(category),
             warnings,
-            plugin_results,
+            plugin_findings,
         });
     }
     

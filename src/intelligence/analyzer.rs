@@ -47,5 +47,10 @@ pub fn analyze_service(port: u16, service: &str, banner: Option<&str>) -> Vec<St
         warnings.push("🟡 VNC exposed".to_string());
     }
     
+    // Rule-Based Vulnerability Intelligence
+    if let Some(vuln_msg) = crate::intelligence::vuln_db::check_vulnerability(service, banner) {
+        warnings.push(format!("⚠️ Warning: {}", vuln_msg));
+    }
+    
     warnings
 }

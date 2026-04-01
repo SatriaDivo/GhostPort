@@ -14,12 +14,13 @@ use std::time::Instant;
 use clap::Parser;
 
 use cli::{Cli, Commands, ScanMode};
-use config::{ScanConfig, ScanSummary, VERSION, TOP_PORTS};
+use config::{ScanConfig, TOP_PORTS};
 use plugins::manager::PluginManager;
+use utils::report::{ScanReport, render_cli, export_report};
 
 fn print_header() {
     println!("╔══════════════════════════════════════════════════════════════╗");
-    println!("║  GhostPort v{:<50} ║", VERSION);
+    println!("║  GhostPort v3.0.0                                            ║");
     println!("║  Silent Network Recon Toolkit                                ║");
     println!("║  🕵️ Modular Stealth Reconnaissance Framework                 ║");
     println!("╚══════════════════════════════════════════════════════════════╝");
@@ -30,7 +31,7 @@ fn main() {
     let cli = Cli::parse();
     
     match cli.command {
-        Commands::Scan { target, start_port, end_port, threads, banner, mode, top_ports, plugins, json } => {
+        Commands::Scan { target, start_port, end_port, threads, banner, mode, top_ports, plugins, json, output, format } => {
             if !json { print_header(); }
             
             // Resolve target
@@ -96,57 +97,19 @@ fn main() {
             
             let duration = start_time.elapsed();
             
-            // Output results
+            let report = ScanReport {
+                target: target.clone(),
+                results,
+            };
+            
             if json {
-                let summary = ScanSummary {
-                    target,
-                    resolved_ip,
-                    ports_scanned: ports.len(),
-                    open_ports: results.len(),
-                    duration_secs: duration.as_secs_f64(),
-                    results: results.clone(),
-                };
-                println!("{}", serde_json::to_string_pretty(&summary).unwrap_or_default());
+                export_report(&report, "json", "stdout");
             } else {
-                // Print each result
-                for r in &results {
-                    let svc = r.service.as_deref().unwrap_or("Unknown");
-                    let ver = r.version.as_deref()
-                        .map(|v| format!(" ({})", v))
-                        .unwrap_or_default();
-                    let cat = r.category.as_deref().unwrap_or("");
-                    
-                    println!("[OPEN] {}:{} → {}{} {}", r.ip, r.port, svc, ver, cat);
-                    
-                    // Show banner (first line only, max 60 chars)
-                    if let Some(ref b) = r.banner {
-                        let short: String = b.lines()
-                            .next()
-                            .unwrap_or("")
-                            .chars()
-                            .take(60)
-                            .collect();
-                        println!("       └─ {}", short);
-                    }
-                    
-                    // Show warnings
-                    for w in &r.warnings {
-                        println!("       ⚠️  {}", w);
-                    }
-                    
-                    // Show plugin results
-                    for pr in &r.plugin_results {
-                        for f in &pr.findings {
-                            println!("       [{}] {}: {}", pr.plugin_name, f.key, f.value);
-                        }
-                    }
-                }
-                
-                // Summary
-                println!();
-                println!("════════════════════════════════════════════════════════════════");
-                println!("[+] Scan Complete! Duration: {:.2}s", duration.as_secs_f64());
-                println!("[+] Ports: {} scanned, {} open", ports.len(), results.len());
+                render_cli(&report, duration.as_secs_f64(), ports.len());
+            }
+            
+            if let Some(path) = output {
+                export_report(&report, &format, &path);
             }
         }
         

@@ -1,8 +1,8 @@
 //! Plugin Manager
 
 use std::panic;
-use crate::config::PluginResult;
-use crate::plugins::{Plugin, http::HttpPlugin, ssh::SshPlugin};
+use crate::plugins::plugin_trait::{Plugin, PluginResult};
+use crate::plugins::{http::HttpPlugin, ssh::SshPlugin};
 
 pub struct PluginManager {
     plugins: Vec<Box<dyn Plugin>>,

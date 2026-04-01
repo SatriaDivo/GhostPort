@@ -156,6 +156,14 @@ pub enum Commands {
         /// Output dalam format JSON
         #[arg(long = "json")]
         json: bool,
+
+        /// Output file name
+        #[arg(long = "output")]
+        output: Option<String>,
+
+        /// Output file format (json, csv, txt)
+        #[arg(long = "format", default_value = "txt")]
+        format: String,
     },
 
     /// 🔗 Connect ke target (Netcat-like)
