@@ -4,6 +4,26 @@ use std::fs::File;
 use std::io::Write;
 
 #[derive(Clone, Debug)]
+pub struct VerificationPayload {
+    pub verification_type: String,
+    pub payload: String,
+    pub steps: String,
+    pub expected_result: String,
+    pub risk_confirmed_if: String,
+}
+
+#[derive(Clone, Debug)]
+pub struct Vulnerability {
+    pub name: String,
+    pub description: String,
+    pub severity: String,
+    pub confidence: u8,
+    pub impact: String,
+    pub recommendation: String,
+    pub verification: VerificationPayload,
+}
+
+#[derive(Clone, Debug)]
 pub struct ScanResult {
     pub ip: String,
     pub port: u16,
@@ -11,7 +31,7 @@ pub struct ScanResult {
     pub version: Option<String>,
     pub banner: Option<String>,
     pub category: Option<String>,
-    pub warnings: Vec<String>,
+    pub vulnerabilities: Vec<Vulnerability>,
     pub plugin_findings: Vec<String>,
 }
 
@@ -42,8 +62,13 @@ pub fn render_cli(report: &ScanReport, duration_secs: f64, ports_scanned_count: 
             println!("       └─ {}", short);
         }
         
-        for w in &r.warnings {
-            println!("       ⚠️  {}", w);
+        for v in &r.vulnerabilities {
+            println!("       ⚠️  [VULN] {}", v.name);
+            println!("           └─ Deskripsi : {}", v.description);
+            println!("           └─ Severity  : {} | Confidence: {}%", v.severity, v.confidence);
+            println!("           └─ Dampak    : {}", v.impact);
+            println!("           └─ Solusi    : {}", v.recommendation);
+            println!("           └─ Verifikasi: [{}] {}", v.verification.verification_type, v.verification.payload);
         }
         
         for p in &r.plugin_findings {
@@ -119,10 +144,31 @@ pub fn export_report(report: &ScanReport, format_opt: &str, path: &str) {
                 }
                 
                 // Array fields
-                json.push_str("      \"warnings\": [");
-                let w_str: Vec<String> = r.warnings.iter().map(|w| format!("\"{}\"", escape_json(w))).collect();
-                json.push_str(&w_str.join(", "));
-                json.push_str("],\n");
+                json.push_str("      \"vulnerabilities\": [\n");
+                for (vi, vuln) in r.vulnerabilities.iter().enumerate() {
+                    json.push_str("        {\n");
+                    json.push_str(&format!("          \"name\": \"{}\",\n", escape_json(&vuln.name)));
+                    json.push_str(&format!("          \"description\": \"{}\",\n", escape_json(&vuln.description)));
+                    json.push_str(&format!("          \"severity\": \"{}\",\n", escape_json(&vuln.severity)));
+                    json.push_str(&format!("          \"confidence\": {},\n", vuln.confidence));
+                    json.push_str(&format!("          \"impact\": \"{}\",\n", escape_json(&vuln.impact)));
+                    json.push_str(&format!("          \"recommendation\": \"{}\",\n", escape_json(&vuln.recommendation)));
+                    
+                    json.push_str("          \"verification\": {\n");
+                    json.push_str(&format!("            \"type\": \"{}\",\n", escape_json(&vuln.verification.verification_type)));
+                    json.push_str(&format!("            \"payload\": \"{}\",\n", escape_json(&vuln.verification.payload)));
+                    json.push_str(&format!("            \"steps\": \"{}\",\n", escape_json(&vuln.verification.steps)));
+                    json.push_str(&format!("            \"expected_result\": \"{}\",\n", escape_json(&vuln.verification.expected_result)));
+                    json.push_str(&format!("            \"risk_confirmed_if\": \"{}\"\n", escape_json(&vuln.verification.risk_confirmed_if)));
+                    json.push_str("          }\n");
+                    
+                    if vi < r.vulnerabilities.len() - 1 {
+                        json.push_str("        },\n");
+                    } else {
+                        json.push_str("        }\n");
+                    }
+                }
+                json.push_str("      ],\n");
 
                 json.push_str("      \"plugin_findings\": [");
                 let pf_str: Vec<String> = r.plugin_findings.iter().map(|p| format!("\"{}\"", escape_json(p))).collect();
@@ -149,7 +195,7 @@ pub fn export_report(report: &ScanReport, format_opt: &str, path: &str) {
         },
         "csv" => {
             let mut csv = String::new();
-            csv.push_str("ip,port,service,version,category,warnings,plugin_findings\n");
+            csv.push_str("ip,port,service,version,category,vulnerabilities,plugin_findings\n");
             
             for r in &report.results {
                 let ip = escape_csv(&r.ip);
@@ -157,10 +203,10 @@ pub fn export_report(report: &ScanReport, format_opt: &str, path: &str) {
                 let svc = escape_csv(r.service.as_deref().unwrap_or(""));
                 let ver = escape_csv(r.version.as_deref().unwrap_or(""));
                 let cat = escape_csv(r.category.as_deref().unwrap_or(""));
-                let warn = escape_csv(&r.warnings.join("; "));
+                let vuln_str = escape_csv(&r.vulnerabilities.iter().map(|v| format!("{}: {}", v.name, v.recommendation)).collect::<Vec<_>>().join("; "));
                 let pf = escape_csv(&r.plugin_findings.join("; "));
                 
-                csv.push_str(&format!("{},{},{},{},{},{},{}\n", ip, port, svc, ver, cat, warn, pf));
+                csv.push_str(&format!("{},{},{},{},{},{},{}\n", ip, port, svc, ver, cat, vuln_str, pf));
             }
             
             if is_stdout {
@@ -192,8 +238,12 @@ pub fn export_report(report: &ScanReport, format_opt: &str, path: &str) {
                 if let Some(b) = &r.banner {
                     txt.push_str(&format!("       Banner: {}\n", b.replace('\n', " ")));
                 }
-                for w in &r.warnings {
-                    txt.push_str(&format!("       Warning: {}\n", w));
+                for v in &r.vulnerabilities {
+                    txt.push_str(&format!("       [VULN] {} (Severity: {})\n", v.name, v.severity));
+                    txt.push_str(&format!("         - Deskripsi : {}\n", v.description));
+                    txt.push_str(&format!("         - Dampak    : {}\n", v.impact));
+                    txt.push_str(&format!("         - Solusi    : {}\n", v.recommendation));
+                    txt.push_str(&format!("         - Verifikasi: [{}] {}\n", v.verification.verification_type, v.verification.payload));
                 }
                 for pf in &r.plugin_findings {
                     txt.push_str(&format!("       Plugin: {}\n", pf));

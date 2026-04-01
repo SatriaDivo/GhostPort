@@ -109,7 +109,7 @@ pub fn scan_ports(
         
         let (svc, ver) = service::detect_service(pr.port, banner.as_deref());
         let category = analyzer::categorize_port(pr.port);
-        let warnings = analyzer::analyze_service(pr.port, &svc, banner.as_deref());
+        let vulnerabilities = analyzer::analyze_service(pr.port, &svc, banner.as_deref());
         
         let plugin_findings: Vec<String> = if let Some(pm) = plugin_manager {
             let res = pm.execute(target, pr.port, banner.as_deref());
@@ -131,7 +131,7 @@ pub fn scan_ports(
             version: ver,
             banner,
             category: Some(category),
-            warnings,
+            vulnerabilities,
             plugin_findings,
         });
     }
