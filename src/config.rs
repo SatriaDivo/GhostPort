@@ -3,7 +3,7 @@
 //! Modul ini berisi konstanta dan konfigurasi global untuk GhostPort.
 
 use serde::Serialize;
-use crate::scanner::stealth::ScanMode;
+use crate::cli::ScanMode;
 
 // ============================================================================
 // KONSTANTA GLOBAL

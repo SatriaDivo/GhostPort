@@ -16,6 +16,7 @@ use crate::plugins::manager::PluginManager;
 
 struct PortResult {
     port: u16,
+    #[allow(dead_code)]
     latency_ms: u64,
 }
 

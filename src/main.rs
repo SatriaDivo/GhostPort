@@ -13,9 +13,8 @@ mod utils;
 use std::time::Instant;
 use clap::Parser;
 
-use cli::{Cli, Commands};
-use config::{ScanConfig, ScanResult, ScanSummary, VERSION, TOP_PORTS};
-use scanner::stealth::ScanMode;
+use cli::{Cli, Commands, ScanMode};
+use config::{ScanConfig, ScanSummary, VERSION, TOP_PORTS};
 use plugins::manager::PluginManager;
 
 fn print_header() {
@@ -44,7 +43,7 @@ fn main() {
             };
             
             // Parse scan mode
-            let scan_mode: ScanMode = mode.parse().unwrap_or(ScanMode::Balanced);
+            let scan_mode: ScanMode = mode;
             let scan_config = ScanConfig::from_mode(&scan_mode, threads);
             
             // Determine port list
@@ -178,7 +177,7 @@ fn main() {
                 }
             };
             
-            let scan_mode: ScanMode = mode.parse().unwrap_or(ScanMode::Balanced);
+            let scan_mode: ScanMode = mode;
             let config = ScanConfig::from_mode(&scan_mode, None);
             
             if !json {

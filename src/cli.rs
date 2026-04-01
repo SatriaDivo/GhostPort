@@ -60,11 +60,22 @@ impl ScanMode {
     }
     
     /// Deskripsi mode
+    #[allow(dead_code)]
     pub fn description(&self) -> &'static str {
         match self {
             ScanMode::Stealth => "🕵️ Maximum stealth, random delays",
             ScanMode::Balanced => "⚖️ Balanced speed and stealth",
             ScanMode::Aggressive => "⚡ Maximum speed, minimal stealth",
+        }
+    }
+}
+
+impl std::fmt::Display for ScanMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ScanMode::Stealth => write!(f, "🕵️ Stealth"),
+            ScanMode::Balanced => write!(f, "⚖️ Balanced"),
+            ScanMode::Aggressive => write!(f, "⚡ Aggressive"),
         }
     }
 }
@@ -180,13 +191,3 @@ pub enum Commands {
     Plugins,
 }
 
-/// Cetak header CLI
-pub fn print_header() {
-    println!();
-    println!("╔══════════════════════════════════════════════════════════════╗");
-    println!("║  GhostPort v{:<47} ║", VERSION);
-    println!("║  Silent Network Recon Toolkit                                ║");
-    println!("║  🕵️ Modular Stealth Reconnaissance Framework                 ║");
-    println!("╚══════════════════════════════════════════════════════════════╝");
-    println!();
-}
