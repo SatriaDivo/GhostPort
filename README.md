@@ -1,12 +1,3 @@
-`	ext
-   ██████╗ ██╗  ██╗ ██████╗ ███████╗████████╗██████╗  ██████╗ ██████╗ ████████╗
-  ██╔════╝ ██║  ██║██╔═══██╗██╔════╝╚══██╔══╝██╔══██╗██╔═══██╗██╔══██╗╚══██╔══╝
-  ██║  ███╗███████║██║   ██║███████╗   ██║   ██████╔╝██║   ██║██████╔╝   ██║   
-  ██║   ██║██╔══██║██║   ██║╚════██║   ██║   ██╔═══╝ ██║   ██║██╔══██╗   ██║   
-  ╚██████╔╝██║  ██║╚██████╔╝███████║   ██║   ██║     ╚██████╔╝██║  ██║   ██║   
-   ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝   ╚═╝   ╚═╝      ╚═════╝ ╚═╝  ╚═╝   ╚═╝   
-`
-
 # GhostPort
 
 Sebuah perangkat CLI pengintaian jaringan (network reconnaissance) modular dan multi-threaded yang ditulis menggunakan Rust. GhostPort juga berfungsi sebagai **Network Security Analysis Engine** yang otomatis menganalisis hasil scan port dan mendeteksi kerentanan dengan melampirkan payload verifikasi yang aman.
@@ -34,78 +25,80 @@ Sebuah perangkat CLI pengintaian jaringan (network reconnaissance) modular dan m
 * Toolchain Rust (direkomendasikan versi 1.70.0 ke atas)
 
 **Kompilasi dari source**
-`ash
-git clone https://github.com/username/ghostport.git
-cd ghostport
+```bash
+git clone https://github.com/SatriaDivo/GhostPort.git
+cd GhostPort
 cargo build --release
-`
-Binary hasil kompilasi akan dapat diakses melalui path direktori 	arget/release/ghostport.
+```
+
+Binary hasil kompilasi akan dapat diakses melalui path direktori `target/release/ghostport`.
 
 ## Penggunaan & Contoh Command Lengkap
 
-Berikut adalah sekumpulan contoh perintah (*command*) lengkap yang bisa Anda gunakan dengan GhostPort:
+Berikut adalah sekumpulan contoh perintah (command) lengkap yang bisa Anda gunakan dengan GhostPort:
 
 **1. Pemindaian Cepat (Top Ports)**
 Memindai 20 port yang paling umum digunakan pada target:
-`ash
+```bash
 ghostport scan 192.168.1.10 --top-ports
-`
-*Atau menggunakan domain:*
-`ash
+```
+
+Atau menggunakan domain:
+```bash
 ghostport scan scanme.nmap.org --top-ports
-`
+```
 
 **2. Pemindaian Penuh dengan Intelligence Analysis (Paling Powerful)**
 Memindai top ports, melakukan *banner grabbing*, menjalankan semua plugin pengintaian, dan menampilkan rekomendasi kerentanan langsung di terminal:
-`ash
+```bash
 ghostport scan scanme.nmap.org --top-ports --banner --plugins
-`
+```
 
 **3. Pemindaian Rentang Port Spesifik**
 Memindai port dari 1 hingga 1024:
-`ash
+```bash
 ghostport scan 192.168.1.10 -s 1 -e 1024
-`
-*Atau memindai sekumpulan port tertentu yang dipisah koma:*
-`ash
+```
+
+Atau memindai sekumpulan port tertentu yang dipisah koma:
+```bash
 ghostport scan 192.168.1.10 -p 21,22,80,443,3306
-`
+```
 
 **4. Mode Siluman (Stealth Mode)**
-Menurunkan noise di jaringan untuk menghindari deteksi IDS/IPS (menggunakan mode stealth atau sneaky):
-`ash
+Menurunkan noise di jaringan untuk menghindari deteksi IDS/IPS (menggunakan mode `stealth` atau `sneaky`):
+```bash
 ghostport scan 192.168.1.10 --top-ports --mode stealth
-`
+```
 
 **5. Mode Agresif (Aggressive Mode) & Multi-Threading**
 Mempercepat pemindaian dengan mengabaikan stealth, menggunakan 100 threads:
-`ash
+```bash
 ghostport scan 192.168.1.10 -s 1 -e 65535 --mode aggressive -t 100
-`
+```
 
 **6. Menyimpan Hasil Scan ke JSON (Untuk Analisis)**
 Mengekspor hasil scan secara lengkap termasuk data intelijen kerentanan dan payload PoC ke dalam format JSON:
-`ash
+```bash
 ghostport scan target.com --top-ports --banner --plugins --format json --output laporan.json
-`
+```
 
 **7. Mencetak Raw JSON di Terminal**
-Sangat berguna apabila Anda ingin menyambungkan output ke tools CLI lain (jq, dsb):
-`ash
+Sangat berguna apabila Anda ingin menyambungkan output ke tools CLI lain (`jq`, dsb):
+```bash
 ghostport scan 192.168.1.10 --top-ports --json
-`
+```
 
 **8. Mengetes Koneksi ke Port Spesifik (Ping/Connect Mode)**
-Seperti tool 
-c (netcat), mengecek apakah suatu port terbuka tanpa scanning berlebih:
-`ash
+Seperti tool `nc` (netcat), mengecek apakah suatu port terbuka tanpa scanning berlebih:
+```bash
 ghostport connect 192.168.1.10 22
-`
+```
 
 ## Hasil Output (Analisis Kerentanan)
 
 Contoh struktur output JSON hasil generasi Vulnerability Intelligence & Verification Payload:
-`json
+```json
 {
   "target": "192.168.1.10",
   "results": [
@@ -137,12 +130,11 @@ Contoh struktur output JSON hasil generasi Vulnerability Intelligence & Verifica
     }
   ]
 }
-`
+```
 
 ## Ekstensibilitas
 
-GhostPort dirancang secara khusus untuk bisa diekstensi secara langsung melalui *trait* Plugin. Anda dapat mengimplementasikan logika kustom pengintaian mandiri dengan mendefinisikan *struct* baru, memberikan nilai pada metode *trait* should_run() dan 
-un(), dan meregistrasi modul tersebut ke dalam PluginManager. Pipeline pemindaian GhostPort akan secara otomatis memberikan parameter dan konteks ScanResult ke plugin kustom yang telah dibuat tersebut dan mengelompokkan temuan-temuannya.
+GhostPort dirancang secara khusus untuk bisa diekstensi secara langsung melalui *trait* `Plugin`. Anda dapat mengimplementasikan logika kustom pengintaian mandiri dengan mendefinisikan *struct* baru, memberikan nilai pada metode *trait* `should_run()` dan `run()`, dan meregistrasi modul tersebut ke dalam `PluginManager`. Pipeline pemindaian GhostPort akan secara otomatis memberikan parameter dan konteks `ScanResult` ke plugin kustom yang telah dibuat tersebut dan mengelompokkan temuan-temuannya.
 
 ## Peringatan (Disclaimer)
 
