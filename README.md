@@ -2,6 +2,8 @@
 
 Sebuah perangkat CLI pengintaian jaringan (network reconnaissance) modular dan multi-threaded yang ditulis menggunakan Rust. GhostPort juga berfungsi sebagai **Network Security Analysis Engine** yang otomatis menganalisis hasil scan port dan mendeteksi kerentanan dengan melampirkan payload verifikasi yang aman.
 
+📖 **Penting!** Silakan baca dokumen [FEATURES_AND_PAYLOADS.md](FEATURES_AND_PAYLOADS.md) untuk melihat daftar lengkap fitur Payload Recommender dan resep PoC yang didukung GhostPort.
+
 ## Fitur
 
 * **Pemindaian Inti (Core Scanning)**

@@ -41,6 +41,33 @@ pub struct ScanReport {
     pub results: Vec<ScanResult>,
 }
 
+pub fn generate_scan_report(results: Vec<Vulnerability>, target_ip: &str, port: u16) {
+    use colored::*;
+    
+    for vuln in results {
+        let mut severity_text = vuln.severity.clone();
+        
+        // Colorize severity
+        let severity_colored = match severity_text.to_uppercase().as_str() {
+            "CRITICAL" => severity_text.red().bold(),
+            "HIGH" => severity_text.red(),
+            "MEDIUM" => severity_text.yellow(),
+            "LOW" => severity_text.blue(),
+            _ => severity_text.normal(),
+        };
+
+        println!("[{}] {}", severity_colored, vuln.name.bold());
+        println!("{} {}", "Deskripsi:".bold(), vuln.description);
+        
+        let mut final_payload = vuln.verification.payload.clone();
+        final_payload = final_payload.replace("<TARGET_IP>", target_ip);
+        final_payload = final_payload.replace("<PORT>", &port.to_string());
+        
+        println!("{} {}", "💡 Rekomendasi Payload PoC:".yellow().bold(), final_payload.cyan());
+        println!();
+    }
+}
+
 pub fn render_cli(report: &ScanReport, duration_secs: f64, ports_scanned_count: usize) {
     for r in &report.results {
         let svc = r.service.as_deref().unwrap_or("Unknown");
