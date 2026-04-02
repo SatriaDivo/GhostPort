@@ -21,20 +21,59 @@ Dokumen ini berisi daftar lengkap fitur yang tersedia di **GhostPort** beserta d
 
 ## �️ Cara Penggunaan & Alur Deteksi GhostPort
 
-GhostPort dirancang untuk mempermudah proses deteksi dan validasi *Proof of Concept* (PoC) secara interaktif dari satu pintu. Berikut adalah siklus cara penggunaannya:
+GhostPort dirancang untuk mempermudah proses deteksi dan validasi *Proof of Concept* (PoC) secara interaktif dari satu pintu. Selain pemindaian dasar, GhostPort hadir dengan berbagai kapabilitas lanjutan seperti *stealth mode*, *fingerprinting*, hingga *plugin execution*. Berikut adalah daftar perintah lengkap yang bisa digunakan:
 
-### 1. Menjalankan Scanning
-Jalankan enumerasi ke target Anda. Contoh pemindaian untuk port-port paling umum:
+### 1. Perintah Pemindaian Inti (Scan Command)
+Gunakan perintah `scan` (atau alias `s`) untuk memulai enumerasi.
+
+* **Scan Top Ports (Paling Populer)**
+  ```bash
+  ghostport scan 192.168.1.10 --top-ports
+  ```
+
+* **Scan Berdasarkan Range Port**
+  Memindai port dari 1 hingga 1024 (ini adalah default jika tidak dispesifikasi).
+  ```bash
+  ghostport scan 192.168.1.10 -s 1 -e 1024
+  ```
+
+* **Mengaktifkan Banner Grabbing (Fingerprinting)**
+  Sangat disarankan untuk mendeteksi versi service dan mencocokannya dengan Vuln DB.
+  ```bash
+  ghostport scan 192.168.1.10 --top-ports -b
+  ```
+
+### 2. Mode Pemindaian & Stealth (Evasion)
+GhostPort memiliki *Scan Mode* otomatis yang mengontrol jumlah thread dan delay antar-request untuk menghindari deteksi firewall/IDS. Ada 3 mode:
+* `stealth` (Max stealth, random delays lambat)
+* `balanced` (Keseimbangan kecepatan dan stealth, default)
+* `aggressive` (Kecepatan maksimal, berisiko terdeteksi)
+
 ```bash
-ghostport scan 192.168.1.10 --top-ports
+ghostport scan 192.168.1.10 -s 1 -e 65535 --mode stealth -b
 ```
 
-Atau untuk memindai port tertentu secara spesifik (misal port web/SSH/FTP):
+### 3. Menggunakan Plugin (Deep Reconnaissance)
+Mengaktifkan plugin lanjutan untuk layanan spesifik (seperti HTTP title grabber, SSH info, dll).
 ```bash
-ghostport scan 192.168.1.10 -p 21,22,80,443
+ghostport scan 192.168.1.10 --top-ports -b --plugins
 ```
 
-### 2. Membaca Laporan Kerentanan Interaktif
+### 4. Ekspor Laporan (Exporting)
+Anda dapat menyimpan hasil scan dan payload ke dalam berbagai format (JSON, CSV, atau TXT fallback).
+```bash
+ghostport scan 192.168.1.10 --top-ports -b --format json --output hasil_scan.json
+```
+
+### 5. Utilities Tambahan
+Selain `scan`, GhostPort memiliki *sub-commands* utilitas lain:
+* **Discover Hosts**: Mengecek status aktif sebuah host (`ghostport discover 192.168.1.10`).
+* **Interactive Connect**: Berfungsi layaknya `netcat` untuk menghubungkan dan berinteraksi langsung ke port tertentu (`ghostport connect 192.168.1.10 -p 22`).
+* **List Plugins**: Melihat plugin bawaan yang aktif dan siap dipakai (`ghostport plugins`).
+
+---
+
+### Membaca Laporan Kerentanan Interaktif
 Setelah *port scanning*, GhostPort akan mencocokkan banner *service* yang berjalan dengan database kerentanannya. Anda akan mendapatkan log interaktif berwarna seperti ini di dalam terminal:
 
 ```text
@@ -49,7 +88,7 @@ Deskripsi: Versi OpenSSH sangat lawas dan rentan terhadap berbagai eksploit.
 
 *Perhatikan bahwa variabel `<TARGET_IP>` pada PoC telah diganti otomatis oleh GhostPort menjadi `192.168.1.10`.*
 
-### 3. Validasi Kerentanan dengan Payload PoC
+### Cara Verifikasi Kerentanan dengan Payload PoC
 Blok parameter *Rekomendasi Payload PoC* di terminal Anda, kemudian *copy-paste* eksekusi rekomen tersebut langsung pada sesi terminal yang baru untuk memvalidasi (Verifikasi Aman non-destruktif) eksploit yang relevan.
 
 > Untuk *Active Verification* seperti Apache (CVE-2021-41773), GhostPort bahkan sudah memvalidasi payload ini secara *background* menggunakan HTTP reqwest (jika fitur dieksekusi), memberitahu Anda secara presisi apakah serangannya terkonfirmasi sebelum Anda menjalankannya.
