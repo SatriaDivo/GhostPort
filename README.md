@@ -26,6 +26,13 @@ Sebuah perangkat CLI pengintaian jaringan (network reconnaissance) modular dan m
 **Prasyarat**
 * Toolchain Rust (direkomendasikan versi 1.70.0 ke atas)
 
+**Instalasi langsung tanpa clone manual**
+```bash
+cargo install --git https://github.com/SatriaDivo/GhostPort.git --locked
+```
+
+Perintah ini tetap mengunduh source dari repository Git, tetapi Anda tidak perlu menjalankan `git clone` dan build secara manual.
+
 **Kompilasi dari source**
 ```bash
 git clone https://github.com/SatriaDivo/GhostPort.git
