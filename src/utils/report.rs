@@ -1,7 +1,10 @@
 //! Report Module
 
+use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::Write;
+
+use printpdf::{Base64OrRaw, GeneratePdfOptions, PdfDocument, PdfSaveOptions};
 
 #[derive(Clone, Debug)]
 pub struct VerificationPayload {
@@ -45,7 +48,7 @@ pub fn generate_scan_report(results: Vec<Vulnerability>, target_ip: &str, port: 
     use colored::*;
     
     for vuln in results {
-        let mut severity_text = vuln.severity.clone();
+        let severity_text = vuln.severity.clone();
         
         // Colorize severity
         let severity_colored = match severity_text.to_uppercase().as_str() {
@@ -111,31 +114,23 @@ pub fn render_cli(report: &ScanReport, duration_secs: f64, ports_scanned_count: 
 }
 
 pub fn export_report(report: &ScanReport, format_opt: &str, path: &str) {
-    let mut is_stdout = false;
-    let mut file = if path == "stdout" {
-        is_stdout = true;
-        // Kita hanya pakai dummy karena kalau stdout kita tidak nulis ke file
-        None
-    } else {
-        match File::create(path) {
-            Ok(f) => Some(f),
-            Err(e) => {
-                eprintln!("[!] Gagal membuat file export '{}': {}", path, e);
-                return;
-            }
-        }
-    };
+    let is_stdout = path == "stdout";
+    let fmt = format_opt.to_lowercase();
 
-    let f = format_opt.to_lowercase();
-    let fmt = if !["json", "csv", "txt"].contains(&f.as_str()) {
-        eprintln!("[!] Format '{}' tidak valid, fallback ke 'txt'", f);
-        "txt"
-    } else {
-        f.as_str()
-    };
-
-    match fmt {
+    match fmt.as_str() {
         "json" => {
+            let file = if is_stdout {
+                None
+            } else {
+                match File::create(path) {
+                    Ok(f) => Some(f),
+                    Err(e) => {
+                        eprintln!("[!] Gagal membuat file export '{}': {}", path, e);
+                        return;
+                    }
+                }
+            };
+
             let mut json = String::new();
             json.push_str("{\n");
             json.push_str(&format!("  \"target\": \"{}\",\n", escape_json(&report.target)));
@@ -219,8 +214,20 @@ pub fn export_report(report: &ScanReport, format_opt: &str, path: &str) {
                     println!("[+] Berhasil export ke {} (Format: JSON)", path);
                 }
             }
-        },
+        }
         "csv" => {
+            let file = if is_stdout {
+                None
+            } else {
+                match File::create(path) {
+                    Ok(f) => Some(f),
+                    Err(e) => {
+                        eprintln!("[!] Gagal membuat file export '{}': {}", path, e);
+                        return;
+                    }
+                }
+            };
+
             let mut csv = String::new();
             csv.push_str("ip,port,service,version,category,vulnerabilities,plugin_findings\n");
             
@@ -245,8 +252,68 @@ pub fn export_report(report: &ScanReport, format_opt: &str, path: &str) {
                     println!("[+] Berhasil export ke {} (Format: CSV)", path);
                 }
             }
-        },
-        _ => {
+        }
+        "html" => {
+            let html = build_html_report(report);
+
+            if is_stdout {
+                println!("{}", html);
+                return;
+            }
+
+            let mut file = match File::create(path) {
+                Ok(f) => f,
+                Err(e) => {
+                    eprintln!("[!] Gagal membuat file export '{}': {}", path, e);
+                    return;
+                }
+            };
+
+            if let Err(e) = file.write_all(html.as_bytes()) {
+                eprintln!("[!] Gagal menulis ke file output: {}", e);
+            } else {
+                println!("[+] Berhasil export ke {} (Format: HTML)", path);
+            }
+        }
+        "pdf" => {
+            if is_stdout {
+                eprintln!("[!] Format PDF tidak mendukung stdout. Gunakan output file.");
+                return;
+            }
+
+            let html = build_html_report(report);
+            let mut warnings = Vec::new();
+            let options = GeneratePdfOptions::default();
+
+            let fonts: BTreeMap<String, Base64OrRaw> = BTreeMap::new();
+            let images: BTreeMap<String, Base64OrRaw> = BTreeMap::new();
+
+            let pdf_result = PdfDocument::from_html(&html, &images, &fonts, &options, &mut warnings);
+            let pdf = match pdf_result {
+                Ok(doc) => doc,
+                Err(e) => {
+                    eprintln!("[!] Gagal generate PDF: {}", e);
+                    return;
+                }
+            };
+
+            let save_options = PdfSaveOptions::default();
+            let bytes = pdf.save(&save_options, &mut warnings);
+
+            match File::create(path) {
+                Ok(mut file) => {
+                    if let Err(e) = file.write_all(&bytes) {
+                        eprintln!("[!] Gagal menulis PDF ke file output: {}", e);
+                    } else {
+                        println!("[+] Berhasil export ke {} (Format: PDF)", path);
+                    }
+                }
+                Err(e) => {
+                    eprintln!("[!] Gagal membuat file export '{}': {}", path, e);
+                }
+            }
+        }
+        "txt" => {
             // txt format
             let mut txt = String::new();
             txt.push_str(&format!("Scan Report for {}\n", report.target));
@@ -280,13 +347,24 @@ pub fn export_report(report: &ScanReport, format_opt: &str, path: &str) {
             
             if is_stdout {
                 println!("{}", txt);
-            } else if let Some(mut f) = file {
-                if let Err(e) = f.write_all(txt.as_bytes()) {
-                    eprintln!("[!] Gagal menulis ke file output: {}", e);
-                } else {
-                    println!("[+] Berhasil export ke {} (Format: TXT)", path);
+            } else {
+                match File::create(path) {
+                    Ok(mut f) => {
+                        if let Err(e) = f.write_all(txt.as_bytes()) {
+                            eprintln!("[!] Gagal menulis ke file output: {}", e);
+                        } else {
+                            println!("[+] Berhasil export ke {} (Format: TXT)", path);
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("[!] Gagal membuat file export '{}': {}", path, e);
+                    }
                 }
             }
+        }
+        _ => {
+            eprintln!("[!] Format '{}' tidak valid, fallback ke 'txt'", fmt);
+            export_report(report, "txt", path);
         }
     }
 }
@@ -302,4 +380,182 @@ fn escape_csv(s: &str) -> String {
     } else {
         escaped
     }
+}
+
+fn escape_html(s: &str) -> String {
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        .replace('\'', "&#39;")
+}
+
+fn severity_class(severity: &str) -> &'static str {
+    match severity.to_uppercase().as_str() {
+        "CRITICAL" => "severity-critical",
+        "HIGH" => "severity-high",
+        "MEDIUM" => "severity-medium",
+        "LOW" => "severity-low",
+        _ => "severity-info",
+    }
+}
+
+fn build_html_report(report: &ScanReport) -> String {
+    let open_count = report.results.len();
+    let vuln_count: usize = report.results.iter().map(|result| result.vulnerabilities.len()).sum();
+    let plugin_count: usize = report.results.iter().map(|result| result.plugin_findings.len()).sum();
+
+    let mut html = String::new();
+    html.push_str(r#"<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GhostPort Scan Report</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:radial-gradient(circle at top,#14213d 0,#0b1220 40%,#050816 100%);color:#e5eefc;line-height:1.6}
+.wrap{max-width:1200px;margin:0 auto;padding:40px 20px 56px}
+.hero{background:linear-gradient(135deg,rgba(40,68,122,.9),rgba(10,16,31,.95));border:1px solid rgba(255,255,255,.08);border-radius:24px;padding:32px;box-shadow:0 24px 80px rgba(0,0,0,.35)}
+.eyebrow{letter-spacing:.18em;text-transform:uppercase;font-size:12px;color:#90b4ff}
+.title{margin:10px 0 8px;font-size:42px;line-height:1.1}
+.subtitle{margin:0;color:#bfd1f5;max-width:780px}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin:22px 0 0}
+.card{background:rgba(8,14,28,.78);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:18px 20px;backdrop-filter:blur(8px)}
+.stat-label{font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:#8ca3d1}
+.stat-value{font-size:28px;font-weight:700;margin-top:4px}
+.section{margin-top:28px}
+.section h2{margin:0 0 14px;font-size:24px}
+.result{margin-bottom:18px;border:1px solid rgba(255,255,255,.08);border-radius:20px;overflow:hidden;background:rgba(7,12,24,.86)}
+.result-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;padding:18px 20px;background:linear-gradient(90deg,rgba(32,54,95,.75),rgba(14,20,34,.85));border-bottom:1px solid rgba(255,255,255,.08)}
+.endpoint{font-size:18px;font-weight:700}
+.meta{color:#a9bddf;font-size:13px}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+.severity-critical{background:rgba(255,66,66,.16);color:#ff8a8a}
+.severity-high{background:rgba(255,124,58,.16);color:#ffb089}
+.severity-medium{background:rgba(255,196,61,.16);color:#ffd86f}
+.severity-low{background:rgba(96,180,255,.16);color:#9bd0ff}
+.severity-info{background:rgba(155,175,255,.16);color:#c7d4ff}
+.result-body{padding:18px 20px}
+.mono{background:#08101e;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 16px;overflow:auto;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:13px;color:#dce8ff;white-space:pre-wrap;word-break:break-word}
+.kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}
+.kv .item{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:12px 14px}
+.kv .k{font-size:12px;color:#86a0cc;text-transform:uppercase;letter-spacing:.1em}
+.kv .v{margin-top:4px;font-weight:600}
+.vulns{display:grid;gap:14px;margin-top:16px}
+.vuln{border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:16px;background:rgba(255,255,255,.03)}
+.vuln h3{margin:0 0 8px;font-size:18px}
+.vuln p{margin:6px 0 0;color:#cfe0ff}
+.label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:#86a0cc;margin-top:12px;margin-bottom:6px}
+.footer{margin-top:24px;color:#87a0ca;font-size:13px;text-align:center}
+.empty{padding:24px;text-align:center;color:#9eb4dd;border:1px dashed rgba(255,255,255,.12);border-radius:18px;background:rgba(255,255,255,.02)}
+@media (max-width:900px){.grid,.kv{grid-template-columns:1fr 1fr}.title{font-size:34px}}
+@media (max-width:640px){.grid,.kv{grid-template-columns:1fr}.hero,.result-head,.result-body{padding:18px}.title{font-size:28px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<section class="hero">
+<div class="eyebrow">GhostPort Network Reconnaissance</div>
+<h1 class="title">Scan Report</h1>
+<p class="subtitle">Generated report for audit review, including open services, vulnerability intelligence, verification payloads, and plugin findings.</p>
+<div class="grid">
+<div class="card"><div class="stat-label">Target</div><div class="stat-value">"#);
+    html.push_str(&escape_html(&report.target));
+    html.push_str(&format!(r#"</div></div>
+<div class="card"><div class="stat-label">Open Ports</div><div class="stat-value">{}</div></div>
+<div class="card"><div class="stat-label">Vulnerabilities</div><div class="stat-value">{}</div></div>
+<div class="card"><div class="stat-label">Plugin Findings</div><div class="stat-value">{}</div></div>
+</div>
+</section>
+
+<section class="section">
+<h2>Overview</h2>
+<div class="kv">
+<div class="item"><div class="k">Services Detected</div><div class="v">{}</div></div>
+<div class="item"><div class="k">Report Type</div><div class="v">HTML Audit Report</div></div>
+</div>
+</section>
+
+{}{}
+
+<div class="footer">GhostPort audit report generated from scan results.</div>
+</div>
+</body>
+</html>
+"#, open_count, vuln_count, plugin_count, open_count, build_results_html(report), build_plugins_html(report)));
+    html
+}
+
+fn build_results_html(report: &ScanReport) -> String {
+    if report.results.is_empty() {
+        return r#"<section class="section"><div class="empty">No open ports were found for this target.</div></section>"#.to_string();
+    }
+
+    let mut html = String::new();
+    html.push_str(r#"<section class="section"><h2>Open Services</h2>"#);
+
+    for result in &report.results {
+        let service = result.service.as_deref().unwrap_or("Unknown");
+        let version = result.version.as_deref().unwrap_or("N/A");
+        let category = result.category.as_deref().unwrap_or("N/A");
+        let banner = result.banner.as_deref().unwrap_or("No banner captured");
+
+        html.push_str(r#"<article class="result">"#);
+        html.push_str(&format!(r#"<div class="result-head"><div><div class="endpoint">{}:{}</div><div class="meta">{} • {}</div></div><div class="pill severity-info">Service Report</div></div><div class="result-body">"#, escape_html(&result.ip), result.port, escape_html(service), escape_html(category)));
+        html.push_str(r#"<div class="kv">"#);
+        html.push_str(&format!(r#"<div class="item"><div class="k">Version</div><div class="v">{}</div></div>"#, escape_html(version)));
+        html.push_str(&format!(r#"<div class="item"><div class="k">Banner</div><div class="v">{}</div></div>"#, escape_html(banner)));
+        html.push_str(r#"</div>"#);
+
+        if !result.vulnerabilities.is_empty() {
+            html.push_str(r#"<div class="vulns"><h2 style="margin:0 0 2px;font-size:22px;">Vulnerabilities</h2>"#);
+            for vuln in &result.vulnerabilities {
+                let severity = vuln.severity.to_uppercase();
+                let payload = vuln
+                    .verification
+                    .payload
+                    .replace("<TARGET_IP>", &result.ip)
+                    .replace("<PORT>", &result.port.to_string());
+
+                html.push_str(r#"<section class="vuln">"#);
+                html.push_str(&format!(r#"<div class="pill {}">{}</div>"#, severity_class(&severity), escape_html(&severity)));
+                html.push_str(&format!(r#"<h3>{}</h3>"#, escape_html(&vuln.name)));
+                html.push_str(&format!(r#"<p>{}</p>"#, escape_html(&vuln.description)));
+                html.push_str(r#"<div class="kv">"#);
+                html.push_str(&format!(r#"<div class="item"><div class="k">Confidence</div><div class="v">{}%</div></div>"#, vuln.confidence));
+                html.push_str(&format!(r#"<div class="item"><div class="k">Impact</div><div class="v">{}</div></div>"#, escape_html(&vuln.impact)));
+                html.push_str(&format!(r#"<div class="item"><div class="k">Recommendation</div><div class="v">{}</div></div>"#, escape_html(&vuln.recommendation)));
+                html.push_str(&format!(r#"<div class="item"><div class="k">Verification Type</div><div class="v">{}</div></div>"#, escape_html(&vuln.verification.verification_type)));
+                html.push_str(r#"</div>"#);
+                html.push_str(r#"<div class="label">Verification Payload</div><div class="mono">"#);
+                html.push_str(&escape_html(&payload));
+                html.push_str(r#"</div>"#);
+                html.push_str(&format!(r#"<div class="label">Steps</div><div class="mono">{}</div>"#, escape_html(&vuln.verification.steps)));
+                html.push_str(&format!(r#"<div class="label">Expected Result</div><div class="mono">{}</div>"#, escape_html(&vuln.verification.expected_result)));
+                html.push_str(&format!(r#"<div class="label">Risk Confirmed If</div><div class="mono">{}</div>"#, escape_html(&vuln.verification.risk_confirmed_if)));
+                html.push_str(r#"</section>"#);
+            }
+            html.push_str(r#"</div>"#);
+        }
+
+        if !result.plugin_findings.is_empty() {
+            html.push_str(r#"<div class="label">Plugin Findings</div><div class="mono">"#);
+            for finding in &result.plugin_findings {
+                html.push_str(&escape_html(finding));
+                html.push_str("<br>");
+            }
+            html.push_str(r#"</div>"#);
+        }
+
+        html.push_str(r#"</div></article>"#);
+    }
+
+    html.push_str(r#"</section>"#);
+    html
+}
+
+fn build_plugins_html(_report: &ScanReport) -> String {
+
+    String::new()
 }

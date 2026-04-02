@@ -19,7 +19,9 @@ Sebuah perangkat CLI pengintaian jaringan (network reconnaissance) modular dan m
   * Ekosistem modul yang mudah diperluas untuk layanan spesifik (HTTP, SSH, FTP)
   * Pengintaian mendalam HTTP (ekstraksi header, parsing judul halaman, pengujian endpoint)
 * **Mesin Ekspor (Export Engine)**
-  * Serialisasi format data bawaan untuk output JSON, CSV, dan TXT
+  * Serialisasi format data bawaan untuk output JSON, CSV, TXT, HTML, dan PDF
+* **Scan Report Generator**
+  * Generasi laporan HTML/PDF yang rapi untuk kebutuhan audit dan dokumentasi keamanan
 
 ## Instalasi
 
@@ -91,6 +93,8 @@ Mengekspor hasil scan secara lengkap termasuk data intelijen kerentanan dan payl
 ```bash
 ghostport scan target.com --top-ports --banner --plugins --format json --output laporan.json
 ```
+
+Anda juga dapat memakai `--format html` atau `--format pdf` untuk laporan audit yang lebih rapi.
 
 **7. Mencetak Raw JSON di Terminal**
 Sangat berguna apabila Anda ingin menyambungkan output ke tools CLI lain (`jq`, dsb):
